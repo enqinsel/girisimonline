@@ -46,6 +46,7 @@ Secret query param olarak kabul edilmez.
   - Domain alındığında Site URL ve Redirect URLs production domaine göre güncellenmeli.
   - Şifre sıfırlama redirect URL'i: `/sifre-yenile`
   - E-posta doğrulama dönüş URL'i: `/giris?verified=1`
+  - Yeni domainlerde doğrulama mailleri kısa süre spam'e düşebilir; kullanıcıya kayıt sonrası spam klasörünü de kontrol etmesi söylenir.
 - Admin:
   - Panel adresi `/ngin`.
   - `/admin` bilerek 404 döner.

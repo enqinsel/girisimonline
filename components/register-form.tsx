@@ -47,7 +47,7 @@ export function RegisterForm() {
     }
 
     setMessage(
-      "Kayıt isteğin alındı. Hesabını açmak için e-postandaki doğrulama bağlantısına tıkla.",
+      "Kayıt isteğin alındı. Hesabını açmak için e-postandaki doğrulama bağlantısına tıkla. Maili göremezsen spam klasörünü de kontrol et.",
     );
     setPassword("");
     setPasswordConfirm("");
@@ -145,4 +145,3 @@ export function RegisterForm() {
     </form>
   );
 }
-
