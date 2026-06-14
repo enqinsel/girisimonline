@@ -4,30 +4,42 @@ import Link from "next/link";
 import { LockKeyhole, Mail } from "lucide-react";
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { FormAlert } from "@/components/form-alert";
+
+type Feedback = {
+  text: string;
+  variant: "error" | "success" | "info";
+};
 
 export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (password.length < 8) {
-      setMessage("Şifren en az 8 karakter olmalı.");
+      setFeedback({
+        text: "Şifren en az 8 karakter olmalı.",
+        variant: "error",
+      });
       return;
     }
 
     if (password !== passwordConfirm) {
-      setMessage("Şifreler eşleşmiyor.");
+      setFeedback({ text: "Şifreler eşleşmiyor.", variant: "error" });
       return;
     }
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setMessage("Supabase env değerleri yapılandırılmamış.");
+      setFeedback({
+        text: "Kayıt sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
@@ -42,13 +54,17 @@ export function RegisterForm() {
     setLoading(false);
 
     if (error) {
-      setMessage("Kayıt başlatılamadı. Bilgilerini kontrol edip tekrar dene.");
+      setFeedback({
+        text: "Kayıt başlatılamadı. Bilgilerini kontrol edip tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
-    setMessage(
-      "Kayıt isteğin alındı. Hesabını açmak için e-postandaki doğrulama bağlantısına tıkla. Maili göremezsen spam klasörünü de kontrol et.",
-    );
+    setFeedback({
+      text: "Kayıt isteğin alındı. Hesabını açmak için e-postandaki doğrulama bağlantısına tıkla. Maili göremezsen spam klasörünü de kontrol et.",
+      variant: "success",
+    });
     setPassword("");
     setPasswordConfirm("");
   }
@@ -141,7 +157,9 @@ export function RegisterForm() {
         </Link>
       </div>
 
-      {message ? <p className="mt-3 text-sm leading-6 text-muted">{message}</p> : null}
+      {feedback ? (
+        <FormAlert variant={feedback.variant}>{feedback.text}</FormAlert>
+      ) : null}
     </form>
   );
 }

@@ -4,18 +4,27 @@ import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { FormAlert } from "@/components/form-alert";
+
+type Feedback = {
+  text: string;
+  variant: "error" | "success" | "info";
+};
 
 export function PasswordUpdateForm() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
-      setMessage("Supabase env değerleri yapılandırılmamış.");
+      setFeedback({
+        text: "Şifre yenileme sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
@@ -36,22 +45,31 @@ export function PasswordUpdateForm() {
     event.preventDefault();
 
     if (!supabase) {
-      setMessage("Supabase env değerleri yapılandırılmamış.");
+      setFeedback({
+        text: "Şifre yenileme sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
     if (!ready) {
-      setMessage("Şifre yenileme bağlantısı geçersiz ya da süresi dolmuş olabilir.");
+      setFeedback({
+        text: "Şifre yenileme bağlantısı geçersiz ya da süresi dolmuş olabilir.",
+        variant: "error",
+      });
       return;
     }
 
     if (password.length < 8) {
-      setMessage("Yeni şifren en az 8 karakter olmalı.");
+      setFeedback({
+        text: "Yeni şifren en az 8 karakter olmalı.",
+        variant: "error",
+      });
       return;
     }
 
     if (password !== passwordConfirm) {
-      setMessage("Şifreler eşleşmiyor.");
+      setFeedback({ text: "Şifreler eşleşmiyor.", variant: "error" });
       return;
     }
 
@@ -60,11 +78,17 @@ export function PasswordUpdateForm() {
     setLoading(false);
 
     if (error) {
-      setMessage("Şifre güncellenemedi. Bağlantının süresi dolmuş olabilir.");
+      setFeedback({
+        text: "Şifre güncellenemedi. Bağlantının süresi dolmuş olabilir.",
+        variant: "error",
+      });
       return;
     }
 
-    setMessage("Şifren güncellendi. Giriş sayfasına yönlendiriliyorsun.");
+    setFeedback({
+      text: "Şifren güncellendi. Giriş sayfasına yönlendiriliyorsun.",
+      variant: "success",
+    });
     window.setTimeout(() => {
       window.location.href = "/giris?reset=1";
     }, 1200);
@@ -138,8 +162,9 @@ export function PasswordUpdateForm() {
         </Link>
       </div>
 
-      {message ? <p className="mt-3 text-sm leading-6 text-muted">{message}</p> : null}
+      {feedback ? (
+        <FormAlert variant={feedback.variant}>{feedback.text}</FormAlert>
+      ) : null}
     </form>
   );
 }
-

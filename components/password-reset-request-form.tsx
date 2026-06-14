@@ -4,10 +4,16 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { FormAlert } from "@/components/form-alert";
+
+type Feedback = {
+  text: string;
+  variant: "error" | "success" | "info";
+};
 
 export function PasswordResetRequestForm() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -15,7 +21,10 @@ export function PasswordResetRequestForm() {
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setMessage("Supabase env değerleri yapılandırılmamış.");
+      setFeedback({
+        text: "Şifre yenileme sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
@@ -25,9 +34,10 @@ export function PasswordResetRequestForm() {
     });
     setLoading(false);
 
-    setMessage(
-      "Bu e-posta ile kayıtlı bir hesap varsa şifre yenileme bağlantısı gönderildi.",
-    );
+    setFeedback({
+      text: "Bu e-posta ile kayıtlı bir hesap varsa şifre yenileme bağlantısı gönderildi.",
+      variant: "success",
+    });
   }
 
   return (
@@ -70,8 +80,9 @@ export function PasswordResetRequestForm() {
         </Link>
       </div>
 
-      {message ? <p className="mt-3 text-sm leading-6 text-muted">{message}</p> : null}
+      {feedback ? (
+        <FormAlert variant={feedback.variant}>{feedback.text}</FormAlert>
+      ) : null}
     </form>
   );
 }
-

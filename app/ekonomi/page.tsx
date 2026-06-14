@@ -92,7 +92,7 @@ export default async function EconomyPage({
             description={
               databaseReady
                 ? "Arama veya filtreleri sadeleştirerek tekrar deneyebilirsin."
-                : "Supabase env değerleri ve ilk import tamamlandıktan sonra ekonomi haberleri burada görünecek."
+                : "Veri bağlantısı ve ilk import tamamlandıktan sonra ekonomi haberleri burada görünecek."
             }
             title={
               databaseReady

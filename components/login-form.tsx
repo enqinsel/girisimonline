@@ -4,6 +4,12 @@ import Link from "next/link";
 import { LockKeyhole, Mail } from "lucide-react";
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { FormAlert } from "@/components/form-alert";
+
+type Feedback = {
+  text: string;
+  variant: "error" | "success" | "info";
+};
 
 export function LoginForm({
   nextPath = "/",
@@ -14,15 +20,19 @@ export function LoginForm({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
-  const displayedMessage = message ?? notice ?? null;
+  const displayedFeedback =
+    feedback ?? (notice ? { text: notice, variant: "success" as const } : null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setMessage("Supabase env değerleri yapılandırılmamış.");
+      setFeedback({
+        text: "Giriş sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+        variant: "error",
+      });
       return;
     }
 
@@ -34,9 +44,10 @@ export function LoginForm({
     setLoading(false);
 
     if (error) {
-      setMessage(
-        "Giriş yapılamadı. E-posta, şifre veya Supabase e-posta doğrulama durumunu kontrol et.",
-      );
+      setFeedback({
+        text: "Giriş yapılamadı. E-posta adresini, şifreni veya doğrulama durumunu kontrol et.",
+        variant: "error",
+      });
       return;
     }
 
@@ -104,8 +115,10 @@ export function LoginForm({
           Şifremi unuttum
         </Link>
       </div>
-      {displayedMessage ? (
-        <p className="mt-3 text-sm leading-6 text-muted">{displayedMessage}</p>
+      {displayedFeedback ? (
+        <FormAlert variant={displayedFeedback.variant}>
+          {displayedFeedback.text}
+        </FormAlert>
       ) : null}
     </form>
   );

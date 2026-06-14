@@ -76,7 +76,7 @@ export default async function Home({
             description={
               databaseReady
                 ? "Arama veya filtreleri sadeleştirerek tekrar deneyebilirsin."
-                : "Supabase env değerleri ve ilk import tamamlandıktan sonra gerçek kaynaklardan çekilen haberler burada görünecek."
+                : "Veri bağlantısı ve ilk import tamamlandıktan sonra gerçek kaynaklardan çekilen haberler burada görünecek."
             }
             title={
               databaseReady

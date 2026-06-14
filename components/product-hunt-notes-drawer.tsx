@@ -194,7 +194,7 @@ export function ProductHuntNotesDrawer({
     setSaving(false);
 
     if (!response.ok) {
-      setMessage("Not kaydedilemedi. Supabase tablosu hazır mı kontrol et.");
+      setMessage("Not kaydedilemedi. Lütfen daha sonra tekrar dene.");
       return;
     }
 
@@ -557,7 +557,11 @@ function ProductNoteForm({
         ) : null}
       </div>
 
-      {message ? <p className="mt-3 text-sm text-muted">{message}</p> : null}
+      {message ? (
+        <div className="mt-3 rounded-md border border-border bg-background px-3 py-2 text-sm leading-6 text-muted">
+          {message}
+        </div>
+      ) : null}
     </div>
   );
 }
