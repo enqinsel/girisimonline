@@ -1,0 +1,112 @@
+"use client";
+
+import Link from "next/link";
+import { LockKeyhole, Mail } from "lucide-react";
+import { useState } from "react";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+
+export function LoginForm({
+  nextPath = "/",
+  notice,
+}: {
+  nextPath?: string;
+  notice?: string | null;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const displayedMessage = message ?? notice ?? null;
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) {
+      setMessage("Supabase env değerleri yapılandırılmamış.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+
+    if (error) {
+      setMessage(
+        "Giriş yapılamadı. E-posta, şifre veya Supabase e-posta doğrulama durumunu kontrol et.",
+      );
+      return;
+    }
+
+    window.location.href = nextPath;
+  }
+
+  return (
+    <form
+      className="rounded-md border border-border bg-card p-6 shadow-sm"
+      onSubmit={submit}
+    >
+      <label className="text-sm font-semibold text-ink" htmlFor="email">
+        E-posta
+      </label>
+      <div className="relative mt-2">
+        <Mail
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+          aria-hidden="true"
+        />
+        <input
+          autoComplete="email"
+          className="h-11 w-full rounded-md border border-border bg-background pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+          id="email"
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="sen@example.com"
+          required
+          type="email"
+          value={email}
+        />
+      </div>
+      <label className="mt-4 block text-sm font-semibold text-ink" htmlFor="password">
+        Şifre
+      </label>
+      <div className="relative mt-2">
+        <LockKeyhole
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+          aria-hidden="true"
+        />
+        <input
+          autoComplete="current-password"
+          className="h-11 w-full rounded-md border border-border bg-background pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+          id="password"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Şifren"
+          required
+          type="password"
+          value={password}
+        />
+      </div>
+      <button
+        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:cursor-wait disabled:opacity-70"
+        disabled={loading}
+        type="submit"
+      >
+        Giriş Yap
+      </button>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <Link className="font-semibold text-primary-dark hover:text-primary" href="/kayit">
+          Hesap oluştur
+        </Link>
+        <Link
+          className="font-semibold text-muted hover:text-ink"
+          href="/sifre-sifirla"
+        >
+          Şifremi unuttum
+        </Link>
+      </div>
+      {displayedMessage ? (
+        <p className="mt-3 text-sm leading-6 text-muted">{displayedMessage}</p>
+      ) : null}
+    </form>
+  );
+}
