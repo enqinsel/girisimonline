@@ -4,6 +4,7 @@ import {
   getBearerToken,
   getUserFromRequest,
 } from "@/lib/auth";
+import { legacyArticlePublicSelectWithSource } from "@/lib/data";
 
 export async function GET(request: Request) {
   const user = await getUserFromRequest(request);
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   const { data: bookmarks, error } = await supabase
     .from("bookmarks")
     .select(
-      "id, article_id, created_at, article:articles(*, source:sources(id, name, slug, homepage_url, section))",
+      `id, article_id, created_at, article:articles(${legacyArticlePublicSelectWithSource})`,
     )
     .order("created_at", { ascending: false });
 

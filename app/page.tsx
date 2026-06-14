@@ -4,7 +4,7 @@ import { FeedFilters } from "@/components/feed-filters";
 import { getArticleFeed, getSourceFilterOptions } from "@/lib/data";
 import { hasSupabaseEnv } from "@/lib/supabase/clients";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -19,15 +19,17 @@ export default async function Home({
   const range = single(params.range) ?? "all";
   const pageSize = 12;
   const section = "startup";
-  const { articles, total } = await getArticleFeed({
-    search,
-    source,
-    section,
-    range,
-    limit: pageSize,
-    offset: 0,
-  });
-  const sourceFilters = await getSourceFilterOptions(section);
+  const [{ articles, total }, sourceFilters] = await Promise.all([
+    getArticleFeed({
+      search,
+      source,
+      section,
+      range,
+      limit: pageSize,
+      offset: 0,
+    }),
+    getSourceFilterOptions(section),
+  ]);
   const databaseReady = hasSupabaseEnv();
 
   return (

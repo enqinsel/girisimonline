@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
+import { cache } from "react";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { NoteEditor } from "@/components/note-editor";
 import { ReadMarker } from "@/components/read-marker";
 import { getArticleBySlug } from "@/lib/data";
 import { displayDate } from "@/lib/utils/date";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+const getCachedArticleBySlug = cache(getArticleBySlug);
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -18,7 +21,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticleBySlug(slug);
 
   if (!article) {
     return {
@@ -46,7 +49,7 @@ export async function generateMetadata({
 
 export default async function ArticleDetail({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticleBySlug(slug);
   if (!article) notFound();
   const backHref = article.source?.section === "economy" ? "/ekonomi" : "/";
   const backLabel = article.source?.section === "economy" ? "Ekonomi" : "Son Haberler";

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import type { Article, Source, SourceSection } from "@/lib/types";
 import { sampleArticles, sampleSources } from "@/lib/sample-data";
 import { getSupabaseAnonClient } from "@/lib/supabase/clients";
@@ -17,8 +17,45 @@ type ArticleQuery = {
   offset?: number;
 };
 
-const sourceSelect = "*, source:sources!inner(id, name, slug, homepage_url, section)";
-const legacySourceSelect = "*, source:sources(id, name, slug, homepage_url)";
+type ArticleFeedResult = {
+  articles: Article[];
+  total: number;
+  hasMore: boolean;
+};
+
+type ArticleRowsResult = {
+  articles: Article[];
+  hasMore: boolean;
+  error: SerializedError | null;
+};
+
+type ArticleTotalResult = {
+  total: number;
+  error: SerializedError | null;
+};
+
+type SerializedError = {
+  code?: string;
+  message?: string;
+};
+
+type SectionFilterMode = "article" | "source";
+
+const CACHE_REVALIDATE_SECONDS = 300;
+const articlePublicFields =
+  "id, source_id, title, slug, original_url, canonical_url, normalized_url, excerpt, published_at, imported_at, language, section, status, unique_hash, created_at, updated_at";
+const legacyArticlePublicFields =
+  "id, source_id, title, slug, original_url, canonical_url, normalized_url, excerpt, published_at, imported_at, language, status, unique_hash, created_at, updated_at";
+const sourceRelationSelect = "source:sources(id, name, slug, homepage_url, section)";
+const sourceRelationInnerSelect =
+  "source:sources!inner(id, name, slug, homepage_url, section)";
+const articleFeedSelect = `${articlePublicFields}, ${sourceRelationInnerSelect}`;
+const legacyArticleFeedSelect =
+  `${legacyArticlePublicFields}, ${sourceRelationInnerSelect}`;
+export const articlePublicSelectWithSource =
+  `${articlePublicFields}, ${sourceRelationSelect}`;
+export const legacyArticlePublicSelectWithSource =
+  `${legacyArticlePublicFields}, ${sourceRelationSelect}`;
 
 export async function getSources(section?: SourceSection) {
   const supabase = getSupabaseAnonClient();
@@ -37,65 +74,81 @@ export async function getSources(section?: SourceSection) {
 }
 
 export async function getSourceFilterOptions(section: SourceSection) {
-  const sources = await getSources(section);
-  if (sources.length === 0) return getDefaultSourceFilters(section);
+  return getCachedSourceFilterOptions(section);
+}
 
-  if (section === "startup") {
-    const filters: SourceFilterOption[] = [];
-    const hasWebrazzi = sources.some((source) => source.slug.startsWith("webrazzi"));
-    if (hasWebrazzi) filters.push({ label: "Webrazzi", value: "webrazzi" });
+const getCachedSourceFilterOptions = unstable_cache(
+  async (section: SourceSection) => {
+    const sources = await getSources(section);
+    if (sources.length === 0) return getDefaultSourceFilters(section);
 
-    for (const source of sources) {
-      if (source.slug.startsWith("webrazzi") || source.type === "product_hunt") {
-        continue;
+    if (section === "startup") {
+      const filters: SourceFilterOption[] = [];
+      const hasWebrazzi = sources.some((source) =>
+        source.slug.startsWith("webrazzi"),
+      );
+      if (hasWebrazzi) filters.push({ label: "Webrazzi", value: "webrazzi" });
+
+      for (const source of sources) {
+        if (source.slug.startsWith("webrazzi") || source.type === "product_hunt") {
+          continue;
+        }
+        filters.push({ label: source.name, value: source.slug });
       }
-      filters.push({ label: source.name, value: source.slug });
+
+      return filters;
     }
 
-    return filters;
-  }
-
-  return sources.map((source) => ({
-    label: source.name,
-    value: source.slug,
-  }));
-}
+    return sources.map((source) => ({
+      label: source.name,
+      value: source.slug,
+    }));
+  },
+  ["source-filter-options-v1"],
+  { revalidate: CACHE_REVALIDATE_SECONDS },
+);
 
 export async function getArticles(query: ArticleQuery = {}) {
   const { articles } = await getArticleFeed(query);
   return articles;
 }
 
-export async function getArticleFeed(query: ArticleQuery = {}) {
+export async function getArticleFeed(
+  query: ArticleQuery = {},
+): Promise<ArticleFeedResult> {
   const supabase = getSupabaseAnonClient();
   if (!supabase) {
     const articles = filterSampleArticles(query);
-    return { articles, total: sampleArticles.length };
+    return {
+      articles,
+      hasMore: articles.length >= (query.limit ?? 20),
+      total: getFilteredSampleArticles(query).length,
+    };
   }
 
-  const { data, error, count } = await fetchArticleFeed(supabase, query, {
-    applySection: true,
-    select: sourceSelect,
-  });
-  if (error && isMissingSectionError(error) && query.section === "startup") {
-    const fallback = await fetchArticleFeed(supabase, query, {
-      applySection: false,
-      select: legacySourceSelect,
-    });
+  const normalizedQuery = normalizeArticleQuery(query);
+  let sectionMode: SectionFilterMode = "article";
+  let rows = await getCachedArticleRows(normalizedQuery, sectionMode);
 
-    if (!fallback.error) {
-      return {
-        articles: (fallback.data ?? []) as Article[],
-        total: fallback.count ?? 0,
-      };
-    }
+  if (rows.error && isMissingSectionError(rows.error)) {
+    sectionMode = "source";
+    rows = await getCachedArticleRows(normalizedQuery, sectionMode);
   }
 
-  if (error) {
-    return { articles: [], total: 0 };
+  if (rows.error) {
+    return { articles: [], hasMore: false, total: 0 };
   }
 
-  return { articles: (data ?? []) as Article[], total: count ?? 0 };
+  const totalResult = await getCachedArticleTotal(
+    normalizeCountQuery(normalizedQuery),
+    sectionMode,
+  );
+
+  return {
+    articles: rows.articles,
+    hasMore: rows.hasMore,
+    total: totalResult.error ? rows.articles.length : totalResult.total,
+  };
 }
 
 export async function getArticleBySlug(slug: string) {
@@ -106,7 +159,7 @@ export async function getArticleBySlug(slug: string) {
 
   const { data, error } = await supabase
     .from("articles")
-    .select(sourceSelect)
+    .select(articlePublicSelectWithSource)
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -114,7 +167,7 @@ export async function getArticleBySlug(slug: string) {
   if (error && isMissingSectionError(error)) {
     const fallback = await supabase
       .from("articles")
-      .select(legacySourceSelect)
+      .select(legacyArticlePublicSelectWithSource)
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle();
@@ -126,20 +179,47 @@ export async function getArticleBySlug(slug: string) {
   return data as Article | null;
 }
 
-async function fetchArticleFeed(
-  supabase: SupabaseClient,
+const getCachedArticleRows = unstable_cache(
+  fetchArticleRows,
+  ["article-feed-rows-v2"],
+  { revalidate: CACHE_REVALIDATE_SECONDS },
+);
+
+const getCachedArticleTotal = unstable_cache(
+  fetchArticleTotal,
+  ["article-feed-total-v2"],
+  { revalidate: CACHE_REVALIDATE_SECONDS },
+);
+
+async function fetchArticleRows(
   query: ArticleQuery,
-  options: { applySection: boolean; select: string },
-) {
+  sectionMode: SectionFilterMode,
+): Promise<ArticleRowsResult> {
+  const supabase = getSupabaseAnonClient();
+  if (!supabase) {
+    const articles = filterSampleArticles(query);
+    return {
+      articles,
+      error: null,
+      hasMore: articles.length >= (query.limit ?? 20),
+    };
+  }
+
+  const limit = query.limit ?? 20;
+  const offset = query.offset ?? 0;
+  const select =
+    sectionMode === "article" ? articleFeedSelect : legacyArticleFeedSelect;
   let request = supabase
     .from("articles")
-    .select(options.select, { count: "exact" })
+    .select(select)
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("imported_at", { ascending: false })
-    .range(query.offset ?? 0, (query.offset ?? 0) + (query.limit ?? 20) - 1);
+    .range(offset, offset + limit);
 
-  if (options.applySection && query.section) {
+  if (sectionMode === "article" && query.section) {
+    request = request.eq("section", query.section);
+  } else if (sectionMode === "source" && query.section) {
     request = request.eq("source.section", query.section);
   }
 
@@ -157,17 +237,70 @@ async function fetchArticleFeed(
   }
 
   if (query.source && query.source !== "all") {
-    const sourceIds = await getSourceIdsForFilter(
-      query.source,
-      options.applySection ? query.section : undefined,
-    );
+    const sourceIds = await getSourceIdsForFilter(query.source, query.section);
     if (sourceIds.length === 0) {
-      return { data: [], error: null, count: 0 };
+      return { articles: [], error: null, hasMore: false };
     }
     request = request.in("source_id", sourceIds);
   }
 
-  return request;
+  const { data, error } = await request;
+  if (error) {
+    return { articles: [], error: serializeError(error), hasMore: false };
+  }
+
+  const rows = ((data ?? []) as unknown as Article[]).slice(0, limit);
+  return {
+    articles: rows,
+    error: null,
+    hasMore: (data ?? []).length > limit,
+  };
+}
+
+async function fetchArticleTotal(
+  query: ArticleQuery,
+  sectionMode: SectionFilterMode,
+): Promise<ArticleTotalResult> {
+  const supabase = getSupabaseAnonClient();
+  if (!supabase) {
+    return { error: null, total: getFilteredSampleArticles(query).length };
+  }
+
+  const select =
+    sectionMode === "source" ? "id, source:sources!inner(id, section)" : "id";
+  let request = supabase
+    .from("articles")
+    .select(select, { count: "exact", head: true })
+    .eq("status", "published");
+
+  if (sectionMode === "article" && query.section) {
+    request = request.eq("section", query.section);
+  } else if (sectionMode === "source" && query.section) {
+    request = request.eq("source.section", query.section);
+  }
+
+  if (query.search) {
+    const term = query.search.replace(/[%_]/g, "");
+    request = request.or(`title.ilike.%${term}%,excerpt.ilike.%${term}%`);
+  }
+
+  const rangeStart = getRangeStart(query.range);
+  if (rangeStart) {
+    const iso = rangeStart.toISOString();
+    request = request.or(
+      `published_at.gte.${iso},and(published_at.is.null,imported_at.gte.${iso})`,
+    );
+  }
+
+  if (query.source && query.source !== "all") {
+    const sourceIds = await getSourceIdsForFilter(query.source, query.section);
+    if (sourceIds.length === 0) return { error: null, total: 0 };
+    request = request.in("source_id", sourceIds);
+  }
+
+  const { count, error } = await request;
+  if (error) return { error: serializeError(error), total: 0 };
+  return { error: null, total: count ?? 0 };
 }
 
 async function getSourceIdsForFilter(value: string, section?: SourceSection) {
@@ -207,12 +340,44 @@ function isMissingSectionError(error: { code?: string; message?: string }) {
   return error.code === "42703" || message.includes("section");
 }
 
+function serializeError(error: { code?: string; message?: string }) {
+  return {
+    code: error.code,
+    message: error.message,
+  } satisfies SerializedError;
+}
+
+function normalizeArticleQuery(query: ArticleQuery) {
+  return {
+    search: query.search?.trim() || undefined,
+    source: query.source ?? "all",
+    section: query.section,
+    range: query.range ?? "all",
+    limit: Math.max(query.limit ?? 20, 1),
+    offset: Math.max(query.offset ?? 0, 0),
+  } satisfies ArticleQuery;
+}
+
+function normalizeCountQuery(query: ArticleQuery) {
+  return {
+    search: query.search,
+    source: query.source,
+    section: query.section,
+    range: query.range,
+  } satisfies ArticleQuery;
+}
+
 function filterSampleSources(section: SourceSection | undefined) {
   if (!section) return sampleSources;
   return sampleSources.filter((source) => source.section === section);
 }
 
 function filterSampleArticles(query: ArticleQuery) {
+  const articles = getFilteredSampleArticles(query);
+  return articles.slice(query.offset ?? 0, (query.offset ?? 0) + (query.limit ?? 20));
+}
+
+function getFilteredSampleArticles(query: ArticleQuery) {
   let articles = [...sampleArticles];
 
   if (query.search) {
@@ -232,7 +397,7 @@ function filterSampleArticles(query: ArticleQuery) {
     articles = articles.filter((article) => article.source?.section === query.section);
   }
 
-  return articles.slice(query.offset ?? 0, (query.offset ?? 0) + (query.limit ?? 20));
+  return articles;
 }
 
 function getDefaultSourceFilters(section: SourceSection) {

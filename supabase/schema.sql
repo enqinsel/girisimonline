@@ -10,6 +10,22 @@ begin
 end;
 $$;
 
+create or replace function public.sync_article_section_from_source()
+returns trigger
+language plpgsql
+as $$
+declare
+  source_section text;
+begin
+  select section into source_section
+  from public.sources
+  where id = new.source_id;
+
+  new.section = coalesce(source_section, new.section, 'startup');
+  return new;
+end;
+$$;
+
 create table if not exists public.sources (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -19,7 +35,7 @@ create table if not exists public.sources (
   list_url text,
   type text not null check (type in ('rss', 'html', 'product_hunt')),
   language text not null check (language in ('tr', 'en')),
-  section text not null default 'startup' check (section in ('startup', 'economy')),
+  section text not null default 'startup' constraint articles_section_check check (section in ('startup', 'economy')),
   active boolean not null default true,
   parser_config jsonb,
   last_checked_at timestamptz,
@@ -42,6 +58,7 @@ create table if not exists public.articles (
   published_at timestamptz,
   imported_at timestamptz not null default now(),
   language text not null check (language in ('tr', 'en')),
+  section text not null default 'startup' check (section in ('startup', 'economy')),
   status text not null default 'published' check (status in ('published', 'hidden', 'error')),
   unique_hash text not null,
   raw_payload jsonb,
@@ -110,6 +127,16 @@ create unique index if not exists articles_unique_hash_unique
 create index if not exists articles_status_imported_idx
   on public.articles(status, imported_at desc);
 
+create index if not exists articles_section_status_published_idx
+  on public.articles(section, status, published_at desc nulls last, imported_at desc);
+
+create index if not exists articles_status_published_idx
+  on public.articles(status, published_at desc nulls last, imported_at desc);
+
+create index if not exists articles_published_slug_idx
+  on public.articles(slug)
+  where status = 'published';
+
 create index if not exists articles_source_idx
   on public.articles(source_id);
 
@@ -118,6 +145,9 @@ create index if not exists article_reads_user_read_at_idx
 
 create index if not exists sources_section_active_idx
   on public.sources(section, active, name);
+
+create index if not exists sources_slug_section_idx
+  on public.sources(slug, section);
 
 create index if not exists import_logs_source_created_idx
   on public.import_logs(source_id, created_at desc);
@@ -134,6 +164,11 @@ drop trigger if exists articles_set_updated_at on public.articles;
 create trigger articles_set_updated_at
 before update on public.articles
 for each row execute function public.set_updated_at();
+
+drop trigger if exists articles_sync_section_from_source on public.articles;
+create trigger articles_sync_section_from_source
+before insert or update of source_id, section on public.articles
+for each row execute function public.sync_article_section_from_source();
 
 drop trigger if exists notes_set_updated_at on public.notes;
 create trigger notes_set_updated_at

@@ -5,7 +5,7 @@ import { FeedList } from "@/components/feed-list";
 import { getArticleFeed, getSourceFilterOptions } from "@/lib/data";
 import { hasSupabaseEnv } from "@/lib/supabase/clients";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Ekonomi",
@@ -33,15 +33,17 @@ export default async function EconomyPage({
   const range = single(params.range) ?? "all";
   const pageSize = 12;
   const section = "economy";
-  const { articles, total } = await getArticleFeed({
-    search,
-    source,
-    section,
-    range,
-    limit: pageSize,
-    offset: 0,
-  });
-  const sourceFilters = await getSourceFilterOptions(section);
+  const [{ articles, total }, sourceFilters] = await Promise.all([
+    getArticleFeed({
+      search,
+      source,
+      section,
+      range,
+      limit: pageSize,
+      offset: 0,
+    }),
+    getSourceFilterOptions(section),
+  ]);
   const databaseReady = hasSupabaseEnv();
 
   return (

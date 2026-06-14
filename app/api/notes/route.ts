@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedDataClient, getUserFromRequest } from "@/lib/auth";
+import { legacyArticlePublicSelectWithSource } from "@/lib/data";
 
 export async function GET(request: Request) {
   const user = await getUserFromRequest(request);
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase
     .from("notes")
     .select(
-      "id, article_id, body, created_at, updated_at, article:articles(*, source:sources(id, name, slug, homepage_url, section))",
+      `id, article_id, body, created_at, updated_at, article:articles(${legacyArticlePublicSelectWithSource})`,
     )
     .order("updated_at", { ascending: false });
 

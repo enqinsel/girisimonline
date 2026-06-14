@@ -168,7 +168,7 @@ async function insertCandidates(
     const excerpt = await resolveExcerpt(source, candidate, normalizedUrl);
     const slug = await buildUniqueSlug(supabase, candidate.title, uniqueHash);
 
-    const { error } = await supabase.from("articles").insert({
+    const articlePayload = {
       source_id: source.id,
       title: candidate.title,
       slug,
@@ -179,10 +179,18 @@ async function insertCandidates(
       published_at: publishedAt,
       imported_at: new Date().toISOString(),
       language: source.language,
+      section: source.section,
       status: "published",
       unique_hash: uniqueHash,
       raw_payload: candidate.rawPayload ?? null,
-    });
+    };
+
+    let { error } = await supabase.from("articles").insert(articlePayload);
+    if (error && isMissingSectionError(error)) {
+      const legacyPayload: Record<string, unknown> = { ...articlePayload };
+      delete legacyPayload.section;
+      ({ error } = await supabase.from("articles").insert(legacyPayload));
+    }
 
     if (!error) {
       insertedCount += 1;
@@ -283,4 +291,9 @@ function isDuplicateError(error: { code?: string; message?: string }) {
     error.code === "23505" ||
     Boolean(error.message?.toLowerCase().includes("duplicate key"))
   );
+}
+
+function isMissingSectionError(error: { code?: string; message?: string }) {
+  const message = error.message?.toLowerCase() ?? "";
+  return error.code === "42703" || message.includes("section");
 }

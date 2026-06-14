@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const limit = clampNumber(Number(url.searchParams.get("limit") ?? "12"), 1, 24);
   const offset = Math.max(Number(url.searchParams.get("offset") ?? "0"), 0);
 
-  const { articles, total } = await getArticleFeed({
+  const { articles, hasMore, total } = await getArticleFeed({
     search: url.searchParams.get("q") ?? undefined,
     source: url.searchParams.get("source") ?? "all",
     section: parseSection(url.searchParams.get("section")),
@@ -16,7 +16,14 @@ export async function GET(request: Request) {
     offset,
   });
 
-  return NextResponse.json({ articles, total });
+  return NextResponse.json(
+    { articles, hasMore, total },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    },
+  );
 }
 
 function clampNumber(value: number, min: number, max: number) {

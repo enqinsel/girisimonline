@@ -53,9 +53,10 @@ export type Article = {
   published_at: string | null;
   imported_at: string;
   language: Language;
+  section: SourceSection;
   status: ArticleStatus;
   unique_hash: string;
-  raw_payload: Record<string, unknown> | null;
+  raw_payload?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
   source?: Pick<Source, "id" | "name" | "slug" | "homepage_url" | "section">;

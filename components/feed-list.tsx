@@ -27,6 +27,7 @@ export function FeedList({
   const [articles, setArticles] = useState(initialArticles);
   const [loading, setLoading] = useState(false);
   const [loadedCount, setLoadedCount] = useState(initialArticles.length);
+  const [hasMore, setHasMore] = useState(initialArticles.length < total);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [readArticleIds, setReadArticleIds] = useState<Set<string>>(
     () => new Set(),
@@ -39,10 +40,11 @@ export function FeedList({
   useEffect(() => {
     setArticles(initialArticles);
     setLoadedCount(initialArticles.length);
+    setHasMore(initialArticles.length < total);
     setLoading(false);
     setReadArticleIds(new Set());
     fetchedReadArticleIdsRef.current = new Set();
-  }, [initialArticles, queryKey]);
+  }, [initialArticles, queryKey, total]);
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -108,7 +110,7 @@ export function FeedList({
   }, [accessToken, articles]);
 
   const loadMore = useCallback(async () => {
-    if (loading || loadedCount >= total) return;
+    if (loading || !hasMore) return;
 
     setLoading(true);
     const params = new URLSearchParams();
@@ -123,6 +125,7 @@ export function FeedList({
     if (response.ok) {
       const payload = (await response.json()) as {
         articles: Article[];
+        hasMore?: boolean;
         total: number;
       };
       setArticles((current) => mergeArticles(current, payload.articles));
@@ -131,9 +134,10 @@ export function FeedList({
           ? payload.total
           : Math.min(current + payload.articles.length, payload.total),
       );
+      setHasMore(payload.hasMore ?? loadedCount + payload.articles.length < payload.total);
     }
     setLoading(false);
-  }, [loadedCount, loading, pageSize, query, total]);
+  }, [hasMore, loadedCount, loading, pageSize, query]);
 
   const toggleRead = useCallback(
     async (articleId: string) => {
@@ -225,7 +229,7 @@ export function FeedList({
             <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
             Yükleniyor
           </span>
-        ) : loadedCount < total ? (
+        ) : hasMore ? (
           <span className="text-sm text-muted">Aşağı indikçe haberler yüklenir.</span>
         ) : (
           <span className="text-sm text-muted">Tüm haberler yüklendi.</span>
