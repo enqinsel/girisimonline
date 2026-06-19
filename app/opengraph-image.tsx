@@ -41,50 +41,33 @@ export default function OpenGraphImage() {
             <div
               style={{
                 alignItems: "center",
-                background: "#0F172A",
+                background: "#FFFFFF",
                 borderRadius: 18,
-                color: "#F8FAFC",
+                border: "1px solid #E2E8F0",
+                color: "#0F172A",
                 display: "flex",
-                fontSize: 48,
+                fontSize: 38,
                 fontWeight: 900,
                 height: 86,
                 justifyContent: "center",
+                letterSpacing: -4,
                 position: "relative",
                 width: 86,
               }}
             >
-              G
+              <span style={{ color: "#10B981" }}>G</span>
+              <span style={{ color: "#047857" }}>O</span>
               <div
                 style={{
-                  background: "#F59E0B",
+                  borderColor: "#2563EB",
                   borderRadius: 999,
-                  height: 14,
+                  borderStyle: "solid",
+                  borderWidth: "5px 5px 0 0",
+                  height: 22,
                   position: "absolute",
-                  right: 13,
-                  top: 13,
-                  width: 14,
-                }}
-              />
-              <div
-                style={{
-                  background: "#10B981",
-                  borderRadius: 999,
-                  bottom: 14,
-                  height: 8,
-                  position: "absolute",
-                  right: 14,
-                  width: 34,
-                }}
-              />
-              <div
-                style={{
-                  background: "#2563EB",
-                  borderRadius: 999,
-                  bottom: 14,
-                  height: 8,
-                  left: 14,
-                  position: "absolute",
-                  width: 30,
+                  right: 9,
+                  top: 12,
+                  width: 22,
                 }}
               />
             </div>

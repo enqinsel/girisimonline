@@ -277,17 +277,17 @@ function FeaturedLaunch({ launch }: { launch: ProductHuntLaunch }) {
 
   return (
     <article className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
-      <div className="grid min-h-full md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-        <div className="min-h-64 border-b border-border bg-[#101828] md:border-b-0 md:border-r">
+      <div className="flex min-h-full flex-col">
+        <div className="border-b border-border bg-[#101828]">
           {mediaUrl ? (
             <div
               aria-label={`${launch.name} medya görseli`}
-              className="h-full min-h-64 bg-cover bg-center"
+              className="aspect-[16/9] bg-contain bg-center bg-no-repeat"
               role="img"
               style={{ backgroundImage: `url(${mediaUrl})` }}
             />
           ) : (
-            <div className="flex h-full min-h-64 items-center justify-center">
+            <div className="flex aspect-[16/9] items-center justify-center">
               <Sparkles className="h-10 w-10 text-[#da552f]" aria-hidden="true" />
             </div>
           )}

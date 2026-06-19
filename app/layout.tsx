@@ -57,9 +57,21 @@ export const metadata: Metadata = {
     images: [absoluteUrl("/opengraph-image")],
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/apple-icon.svg",
+    icon: [
+      {
+        url: "/icon.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+    shortcut: "/icon.png",
+    apple: [
+      {
+        url: "/apple-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
