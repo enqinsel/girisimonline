@@ -1,10 +1,29 @@
+import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { FeedList } from "@/components/feed-list";
 import { FeedFilters } from "@/components/feed-filters";
 import { getArticleFeed, getSourceFilterOptions } from "@/lib/data";
+import { absoluteUrl } from "@/lib/seo";
 import { hasSupabaseEnv } from "@/lib/supabase/clients";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Girişim ve Yatırım Haberleri",
+  description:
+    "Türkiye startup ekosistemi, girişim haberleri ve yatırım gündemini kısa özetlerle tek akışta takip et.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Girişim ve Yatırım Haberleri | Girişim Online",
+    description:
+      "Türkiye startup ekosistemi ve yatırım gündeminden güncel haberler.",
+    url: absoluteUrl("/"),
+    siteName: "Girişim Online",
+    type: "website",
+  },
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

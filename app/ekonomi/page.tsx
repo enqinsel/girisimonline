@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/empty-state";
 import { FeedFilters } from "@/components/feed-filters";
 import { FeedList } from "@/components/feed-list";
 import { getArticleFeed, getSourceFilterOptions } from "@/lib/data";
+import { absoluteUrl } from "@/lib/seo";
 import { hasSupabaseEnv } from "@/lib/supabase/clients";
 
 export const revalidate = 300;
@@ -11,10 +12,14 @@ export const metadata: Metadata = {
   title: "Ekonomi",
   description:
     "Bloomberg HT, CNBC-e, Doviz.com ve Dünya kaynaklarından ekonomi ve finans haberlerini takip et.",
+  alternates: {
+    canonical: "/ekonomi",
+  },
   openGraph: {
     title: "Ekonomi | Girişim Online",
     description:
       "Ekonomi ve finans gündemini kısa özetler ve kaynak bağlantılarıyla takip et.",
+    url: absoluteUrl("/ekonomi"),
     siteName: "Girişim Online",
     type: "website",
   },

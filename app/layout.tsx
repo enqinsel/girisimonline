@@ -2,27 +2,67 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Rocket } from "lucide-react";
 import "@/app/globals.css";
+import { Analytics } from "@/components/analytics";
 import { AuthNav } from "@/components/auth-nav";
 import { BrandLogoMark } from "@/components/brand-logo";
+import { JsonLd } from "@/components/json-ld";
+import {
+  absoluteUrl,
+  defaultSeoDescription,
+  organizationJsonLd,
+  siteName,
+  siteUrl,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: siteName,
   title: {
-    default: "Girişim Online",
-    template: "%s | Girişim Online",
+    default: "Girişim Online - Girişim, Yatırım ve Ekonomi Haberleri",
+    template: `%s | ${siteName}`,
   },
-  description:
-    "Türkiye startup ekosistemi, yatırım haberleri ve girişim gündemini tek akışta takip et.",
+  description: defaultSeoDescription,
+  keywords: [
+    "girişim haberleri",
+    "yatırım haberleri",
+    "startup haberleri",
+    "ekonomi haberleri",
+    "finans haberleri",
+    "Product Hunt",
+  ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Girişim Online",
-    description:
-      "Girişim ve yatırım haberlerini tek yerden takip etmek için sade haber akışı.",
-    siteName: "Girişim Online",
+    description: defaultSeoDescription,
+    siteName,
+    locale: "tr_TR",
     type: "website",
+    url: siteUrl,
+    images: [
+      {
+        url: absoluteUrl("/opengraph-image"),
+        width: 1200,
+        height: 630,
+        alt: "Girişim Online",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Girişim Online",
+    description: defaultSeoDescription,
+    images: [absoluteUrl("/opengraph-image")],
   },
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
     apple: "/apple-icon.svg",
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
   },
 };
 
@@ -34,6 +74,9 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>
+        <JsonLd data={organizationJsonLd()} />
+        <JsonLd data={websiteJsonLd()} />
+        <Analytics />
         <header className="sticky top-0 z-30 border-b border-border bg-background/92 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <Link href="/" className="flex items-center gap-2">
@@ -48,6 +91,9 @@ export default function RootLayout({
               </Link>
               <Link className="transition hover:text-ink" href="/ekonomi">
                 Ekonomi
+              </Link>
+              <Link className="transition hover:text-ink" href="/kaynaklar">
+                Kaynaklar
               </Link>
               <Link className="transition hover:text-ink" href="/kaydedilenler">
                 Kaydedilenler

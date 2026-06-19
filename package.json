@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "seo:smoke": "node scripts/seo-smoke.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

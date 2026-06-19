@@ -3,6 +3,10 @@ import { LoginForm } from "@/components/login-form";
 
 export const metadata: Metadata = {
   title: "Giriş Yap",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;

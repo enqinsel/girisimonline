@@ -29,11 +29,23 @@ import {
   getProductHuntLaunches,
   type ProductHuntLaunch,
 } from "@/lib/product-hunt";
+import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Product Hunt",
   description:
     "Product Hunt üzerinde öne çıkan yeni ürün lansmanlarını Girişim Online içinde takip et.",
+  alternates: {
+    canonical: "/product-hunt",
+  },
+  openGraph: {
+    title: "Product Hunt | Girişim Online",
+    description:
+      "Product Hunt üzerinde öne çıkan yeni ürün lansmanlarını Girişim Online içinde takip et.",
+    url: absoluteUrl("/product-hunt"),
+    siteName: "Girişim Online",
+    type: "website",
+  },
 };
 
 export const revalidate = 900;

@@ -73,6 +73,11 @@ export async function getSources(section?: SourceSection) {
   return (data ?? []) as Source[];
 }
 
+export async function getSourceBySlug(slug: string) {
+  const sources = await getSources();
+  return sources.find((source) => source.slug === slug) ?? null;
+}
+
 export async function getSourceFilterOptions(section: SourceSection) {
   return getCachedSourceFilterOptions(section);
 }

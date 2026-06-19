@@ -3,6 +3,10 @@ import { PasswordResetRequestForm } from "@/components/password-reset-request-fo
 
 export const metadata: Metadata = {
   title: "Şifre Sıfırla",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function PasswordResetPage() {
@@ -26,4 +30,3 @@ export default function PasswordResetPage() {
     </main>
   );
 }
-

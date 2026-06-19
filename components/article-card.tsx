@@ -24,9 +24,18 @@ export function ArticleCard({
       )}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-normal text-muted">
-        <span className="rounded-md border border-border bg-background px-2 py-1 text-ink">
-          {article.source?.name ?? "Kaynak"}
-        </span>
+        {article.source ? (
+          <Link
+            className="rounded-md border border-border bg-background px-2 py-1 text-ink transition hover:border-primary hover:text-primary-dark"
+            href={`/kaynaklar/${article.source.slug}`}
+          >
+            {article.source.name}
+          </Link>
+        ) : (
+          <span className="rounded-md border border-border bg-background px-2 py-1 text-ink">
+            Kaynak
+          </span>
+        )}
         <span className="rounded-md border border-border bg-background px-2 py-1">
           {article.language.toUpperCase()}
         </span>

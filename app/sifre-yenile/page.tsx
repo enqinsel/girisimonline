@@ -3,6 +3,10 @@ import { PasswordUpdateForm } from "@/components/password-update-form";
 
 export const metadata: Metadata = {
   title: "Yeni Şifre Belirle",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function PasswordUpdatePage() {
@@ -25,4 +29,3 @@ export default function PasswordUpdatePage() {
     </main>
   );
 }
-

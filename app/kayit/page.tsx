@@ -3,6 +3,10 @@ import { RegisterForm } from "@/components/register-form";
 
 export const metadata: Metadata = {
   title: "Kayıt Ol",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function RegisterPage() {
@@ -26,4 +30,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-

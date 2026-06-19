@@ -1,14 +1,13 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://girisimonline.com";
-
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/ngin", "/api/import"],
+      disallow: ["/admin", "/ngin", "/api/*"],
     },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${siteUrl}/sitemap.xml`,
   };
 }
